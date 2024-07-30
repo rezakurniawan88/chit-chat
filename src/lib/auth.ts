@@ -7,6 +7,7 @@ export const authOptions : NextAuthOptions = {
     session: {
         strategy: "jwt"
     },
+    secret: process.env.NEXTAUTH_SECRET,
     providers: [
         Credentials({
             credentials: {
@@ -22,17 +23,24 @@ export const authOptions : NextAuthOptions = {
                 }
             },
             async authorize(credentials) {
-                if(!credentials?.email ||!credentials?.password) return null;
+                if(!credentials?.email ||!credentials?.password) {    
+                    throw new Error("No credentials provided");
+                }
+
                 const user = await prisma.user.findUnique({
                     where: {
                         email: credentials.email
                     }
                 });
 
-                if(!user) return null;
+                if(!user) {
+                    throw new Error("Invalid credentials");
+                };
 
                 const decode = await bcrypt.compare(credentials.password, user.password);
-                if(!decode) return null;
+                if(!decode) {
+                    throw new Error("Invalid credentials");
+                };
 
                 return {
                     id: user.id,
